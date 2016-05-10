@@ -1,0 +1,241 @@
+
+-- Copyright (c) 2016, TU Delft Robotics Institute
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+--     http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+
+
+PROGRAM ros_cgio
+--------------------------------------------------------------------------------
+--
+-- A primitive CGI-like interface to IO ports.
+--
+-- Only really suitable for occasional, single reads/writes with no strict
+-- requirements on timing. For serious applications, use a fieldbus.
+--
+-- author: G.A. vd. Hoorn (TU Delft Robotics Institute)
+--
+--------------------------------------------------------------------------------
+%ALPHABETIZE
+%COMMENT = 'ROS//r3'
+%NOLOCKGROUP
+
+
+
+
+--------------------------------------------------------------------------------
+--
+-- remote types & constants
+--
+--------------------------------------------------------------------------------
+
+
+
+
+--------------------------------------------------------------------------------
+--
+-- local types & constants
+--
+--------------------------------------------------------------------------------
+CONST
+	RESP_FILE    = 'TD:\RESPONSE.HTM'
+	RESP_OMODE   = 'RW'
+
+	OP_READ      = 'read'
+	OP_WRITE     = 'write'
+
+
+
+
+--------------------------------------------------------------------------------
+--
+-- local variables
+--
+--------------------------------------------------------------------------------
+VAR
+	fd_          : FILE
+	stat_        : INTEGER
+
+	port_type_   : INTEGER
+	port_idx_    : INTEGER
+	port_val_    : INTEGER
+
+	-- GET params
+	io_op        : STRING[16]  -- operation (or 'method')
+	io_type      : STRING[16]  -- port type (see kliotyp.kl)
+	io_idx       : STRING[16]  -- port index (1-based)
+	io_val       : STRING[16]  -- port value
+
+
+
+
+--------------------------------------------------------------------------------
+--
+-- remote routine prototypes
+--
+--------------------------------------------------------------------------------
+%INCLUDE klrdutil
+
+
+
+
+--------------------------------------------------------------------------------
+--
+-- local routine(s) (prototypes)
+--
+--------------------------------------------------------------------------------
+ROUTINE w_error_(fd : FILE; reason : STRING) FROM ros_cgio
+ROUTINE w_error2_(fd : FILE; reason : STRING; val : INTEGER) FROM ros_cgio
+ROUTINE check_getp_ : INTEGER FROM ros_cgio
+ROUTINE reset_getp_ FROM ros_cgio
+
+
+
+
+--------------------------------------------------------------------------------
+--
+-- Body
+--
+--------------------------------------------------------------------------------
+BEGIN
+	OPEN FILE fd_(RESP_OMODE, RESP_FILE)
+	stat_ = IO_STATUS(fd_)
+	IF (stat_ <> 0) THEN
+		-- TODO: post some error/warning using POST_ERR
+		GOTO lbl_exit0
+	ENDIF
+
+	-- make sure all required parameters are provided
+	IF (check_getp_ <> 0) THEN
+		w_error_(fd_, 'missing parameter')
+		GOTO lbl_exit0
+	ENDIF
+
+	-- convert GET params
+	CNV_STR_INT(io_type, port_type_)
+	CNV_STR_INT(io_idx, port_idx_)
+
+	-- check GET params
+	IF (UNINIT(port_type_) OR UNINIT(port_idx_)) THEN
+		w_error_(fd_, 'conversion error')
+		GOTO lbl_exit0
+	ENDIF
+
+	-- access
+	IF (io_op = OP_READ) THEN
+
+		-- read request
+		GET_PORT_VAL(port_type_, port_idx_, port_val_, stat_)
+		IF (stat_ <> 0) THEN
+			w_error2_(fd_, 'Port read error:', stat_)
+			GOTO lbl_exit0
+
+		ELSE
+			WRITE fd_('{',
+				'"result" : "success", ',
+				'"op" : "read", ',
+				'"type" : "', int_to_strg(port_type_), '", ',
+				'"idx" : "', int_to_strg(port_idx_), '", ',
+				'"value" : "', int_to_strg(port_val_), '"',
+				'}', CR)
+		ENDIF
+	ELSE
+
+		IF (io_op = OP_WRITE) THEN
+
+			-- check and convert additional parameter
+			IF (UNINIT(io_val) OR (io_val = '')) THEN
+				w_error_(fd_, 'missing parameter: io_val')
+				GOTO lbl_exit0
+			ENDIF
+
+			CNV_STR_INT(io_val, port_val_)
+			IF (UNINIT(port_val_)) THEN
+				w_error_(fd_, 'conversion error: io_val')
+				GOTO lbl_exit0
+			ENDIF
+
+			-- write request
+			SET_PORT_VAL(port_type_, port_idx_, port_val_, stat_)
+			IF (stat_ <> 0) THEN
+				w_error2_(fd_, 'Port write error:', stat_)
+				GOTO lbl_exit0
+
+			ELSE
+				WRITE fd_('{',
+					'"result" : "success", ',
+					'"op" : "write", ',
+					'"type" : "', int_to_strg(port_type_), '", ',
+					'"idx" : "', int_to_strg(port_idx_), '", ',
+					'"value" : "', int_to_strg(port_val_), '"',
+					'}', CR)
+			ENDIF
+		ELSE
+
+			-- anything else: error
+			w_error_(fd_, 'Unsupported method: ' + io_op)
+			GOTO lbl_exit0
+		ENDIF
+	ENDIF
+
+lbl_exit0::
+	reset_getp_
+	CLOSE FILE fd_
+END ros_cgio
+
+
+
+
+ROUTINE w_error_
+BEGIN
+	WRITE fd('{"result" : "error", "reason" : "', reason ,'"}', CR)
+END w_error_
+
+
+
+
+ROUTINE w_error2_
+BEGIN
+	WRITE fd('{"result" : "error", "reason" : "', reason , val, '"}', CR)
+END w_error2_
+
+
+
+
+ROUTINE check_getp_
+BEGIN
+	IF (UNINIT(io_op))   THEN io_op   = ''; ENDIF
+	IF (UNINIT(io_type)) THEN io_type = ''; ENDIF
+	IF (UNINIT(io_idx))  THEN io_idx  = ''; ENDIF
+
+	-- we do check the GET param, but it is allowed to be empty (in case this
+	-- is a READ)
+	IF (UNINIT(io_val)) THEN io_val = ''; ENDIF
+
+	-- these are always required: any of them being empty is an error
+	IF ((io_op = '') OR (io_type = '') OR (io_idx = '')) THEN
+		RETURN (-1)
+	ENDIF
+
+	RETURN (0)
+END check_getp_
+
+
+
+
+ROUTINE reset_getp_
+BEGIN
+	io_op   = ''
+	io_type = ''
+	io_idx  = ''
+	io_val  = ''
+END reset_getp_
