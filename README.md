@@ -12,6 +12,17 @@ of determinism is required. The author recommends using any of the supported
 fieldbuses in those cases.
 
 
+## TOC
+
+1. [Requirements](#requirements)
+2. [Installation](#installation)
+3. [Example usage](#example-usage)
+4. [Parameters](#parameters)
+5. [Return documents](#return-documents)
+6. [Limitations / Known issues](#limitations--known-issues)
+7. [Bugs, feature requests, etc](#bugs-feature-requests-etc)
+
+
 ## Requirements
 
 As this is written in Karel, option `R632` is a base requirement. In addition,
