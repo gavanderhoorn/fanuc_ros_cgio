@@ -20,11 +20,11 @@ this needs the base *Web Server* (`HTTP`) and the *Web Server Enhancements*
 
 Other requirements include a functioning networking setup (make sure you can
 ping the controller and the controller's website shows up when opening
-`http://robot_ip/`), and correctly configured *HTTP Authentication* settings.
+`http://robot_ip`), and correctly configured *HTTP Authentication* settings.
 Either unlock the *KAREL* resource completely, set global credentials or add an
 entry allowing access to the `ros_cgio` Karel program only. Refer to section
 6.5 *HTTP AUTHENTICATION* of the *FANUC Robot series - Ethernet Function -
-Operator's Manual* (document `B-82974EN/01` for the R-30iA) for more
+Operator's Manual* (document `B-82974EN` for the R-30iA) for more
 information.
 
 
@@ -35,7 +35,7 @@ Translate the `ros_cgio.kl` either with Roboguide or with the supplied
 Windows to be available.
 
 Finally copy the resultant p-code file to the controller. Make sure to check
-the web server security settings (see [Requirements](#Requirements)).
+the web server security settings (see [Requirements](#requirements)).
 
 No further setup is required.
 
@@ -43,7 +43,7 @@ No further setup is required.
 ## Example usage
 
 Use any HTTP capable client to interact with the program. See the
-[Parameters](#Parameters) section for more information on parameters and their
+[Parameters](#parameters) section for more information on parameters and their
 values.
 
 ### Read
@@ -51,7 +51,7 @@ values.
 The following shows a *read* of the second *Digital output* port on the
 controller:
 
-```
+```bash
 $ curl -s "http://robot_ip/KAREL/ros_cgio?io_op=read&io_type=2&io_idx=2"
 {"result" : "success", "op" : "read", "type" : "2", "idx" : "2", "value" : "1"}
 ```
@@ -63,7 +63,7 @@ The response shows the port is currently in the `ON` (1) state.
 The following shows a *write* to the first *Robot digital output* port on
 the controller:
 
-```
+```bash
 $ curl -s "http://robot_ip/KAREL/ros_cgio?io_op=write&io_type=9&io_idx=1&io_val=1"
 {"result" : "success", "op" : "write", "type" : "9", "idx" : "1", "value" : "1"}
 ```
@@ -119,7 +119,7 @@ In case of an error, only a `reason` field is included in the document. The
 following shows a *write* to a non-existing *Digital output* port and the
 returned document:
 
-```
+```bash
 $ curl -s "http://robot_ip/KAREL/ros_cgio?io_op=write&io_type=2&io_idx=1000&io_val=0"
 {"result" : "error", "reason" : "Port write error: 13002"}
 ```
