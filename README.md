@@ -81,6 +81,9 @@ $ curl -s "http://robot_ip/KAREL/ros_cgio?io_op=write&io_type=9&io_idx=1&io_val=
 
 The response shows the port was set to the `ON` (1) state.
 
+See [fanuc_ros_cgio_py][] for a Python library providing a more convenient
+interface.
+
 
 ## Parameters
 
@@ -160,3 +163,4 @@ Please use the [GitHub issue tracker][].
 
 
 [GitHub issue tracker]: https://github.com/gavanderhoorn/fanuc_ros_cgio/issues
+[fanuc_ros_cgio_py]: https://github.com/gavanderhoorn/fanuc_ros_cgio_py
