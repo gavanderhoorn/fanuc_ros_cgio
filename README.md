@@ -1,5 +1,13 @@
 # fanuc_ros_cgio
 
+## Deprecated
+
+This library and the Karel programs are deprecated.
+
+Please see [gavanderhoorn/dominh](https://github.com/gavanderhoorn/dominh) for a replacement.
+
+This readme and all files in this repository are kept for archival purposes only.
+
 ## Overview
 
 This is a simple Fanuc Karel CGI-like program that allows access to controller
